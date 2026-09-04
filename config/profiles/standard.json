@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "name": "Standard",
+  "drone": {
+    "mass_kg": 0.28,
+    "cage_diameter_m": 0.20,
+    "thrust_to_weight": 2.5,
+    "motor_time_constant_s": 0.042,
+    "linear_drag": 0.065,
+    "quadratic_drag": 0.038,
+    "angular_drag": 0.014,
+    "collision_friction": 0.42,
+    "collision_restitution": 0.36
+  },
+  "angle_limit_deg": 45.0,
+  "angle_level_gain": 5.0,
+  "pid": {
+    "pitch": {"p": 0.092, "i": 0.068, "d": 0.0018, "integral_limit": 0.28, "output_limit": 0.34},
+    "roll": {"p": 0.092, "i": 0.068, "d": 0.0018, "integral_limit": 0.28, "output_limit": 0.34},
+    "yaw": {"p": 0.062, "i": 0.042, "d": 0.0005, "integral_limit": 0.20, "output_limit": 0.24}
+  },
+  "rates": {
+    "pitch": {"max_deg_s": 500.0, "expo": 0.28},
+    "roll": {"max_deg_s": 500.0, "expo": 0.28},
+    "yaw": {"max_deg_s": 420.0, "expo": 0.24}
+  },
+  "input": {"mode": 2, "deadzone": 0.03, "sensitivity": 1.0, "mapping": {"throttle": "left_y", "yaw": "left_x", "pitch": "right_y", "roll": "right_x"}, "reverse": {"throttle": false, "yaw": false, "pitch": false, "roll": false}}
+}

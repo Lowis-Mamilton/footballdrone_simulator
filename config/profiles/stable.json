@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "name": "Stable",
+  "drone": {
+    "mass_kg": 0.28,
+    "cage_diameter_m": 0.20,
+    "thrust_to_weight": 2.15,
+    "motor_time_constant_s": 0.055,
+    "linear_drag": 0.08,
+    "quadratic_drag": 0.045,
+    "angular_drag": 0.018,
+    "collision_friction": 0.45,
+    "collision_restitution": 0.32
+  },
+  "angle_limit_deg": 38.0,
+  "angle_level_gain": 4.5,
+  "pid": {
+    "pitch": {"p": 0.075, "i": 0.055, "d": 0.0014, "integral_limit": 0.24, "output_limit": 0.30},
+    "roll": {"p": 0.075, "i": 0.055, "d": 0.0014, "integral_limit": 0.24, "output_limit": 0.30},
+    "yaw": {"p": 0.055, "i": 0.035, "d": 0.0004, "integral_limit": 0.18, "output_limit": 0.22}
+  },
+  "rates": {
+    "pitch": {"max_deg_s": 360.0, "expo": 0.34},
+    "roll": {"max_deg_s": 360.0, "expo": 0.34},
+    "yaw": {"max_deg_s": 300.0, "expo": 0.28}
+  },
+  "input": {"mode": 2, "deadzone": 0.035, "sensitivity": 1.0, "mapping": {"throttle": "left_y", "yaw": "left_x", "pitch": "right_y", "roll": "right_x"}, "reverse": {"throttle": false, "yaw": false, "pitch": false, "roll": false}}
+}

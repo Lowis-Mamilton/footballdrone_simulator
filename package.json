@@ -1,0 +1,12 @@
+{
+  "name": "football-drone-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node scripts/check.mjs",
+    "test:integration": "node scripts/integration-test.mjs"
+  },
+  "engines": {"node": ">=22"}
+}

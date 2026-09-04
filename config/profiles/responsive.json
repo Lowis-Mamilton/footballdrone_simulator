@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "name": "Responsive",
+  "drone": {
+    "mass_kg": 0.27,
+    "cage_diameter_m": 0.20,
+    "thrust_to_weight": 2.9,
+    "motor_time_constant_s": 0.032,
+    "linear_drag": 0.055,
+    "quadratic_drag": 0.032,
+    "angular_drag": 0.011,
+    "collision_friction": 0.4,
+    "collision_restitution": 0.38
+  },
+  "angle_limit_deg": 55.0,
+  "angle_level_gain": 6.0,
+  "pid": {
+    "pitch": {"p": 0.108, "i": 0.078, "d": 0.0021, "integral_limit": 0.32, "output_limit": 0.39},
+    "roll": {"p": 0.108, "i": 0.078, "d": 0.0021, "integral_limit": 0.32, "output_limit": 0.39},
+    "yaw": {"p": 0.07, "i": 0.048, "d": 0.0006, "integral_limit": 0.22, "output_limit": 0.27}
+  },
+  "rates": {
+    "pitch": {"max_deg_s": 700.0, "expo": 0.20},
+    "roll": {"max_deg_s": 700.0, "expo": 0.20},
+    "yaw": {"max_deg_s": 560.0, "expo": 0.18}
+  },
+  "input": {"mode": 2, "deadzone": 0.025, "sensitivity": 1.0, "mapping": {"throttle": "left_y", "yaw": "left_x", "pitch": "right_y", "roll": "right_x"}, "reverse": {"throttle": false, "yaw": false, "pitch": false, "roll": false}}
+}

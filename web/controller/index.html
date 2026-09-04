@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#071426">
+  <title>Football Drone Controller</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main id="app">
+    <header>
+      <div><span class="eyebrow">FOOTBALL DRONE</span><strong>Controller</strong></div>
+      <div id="connection" class="status disconnected"><i></i><span>Connecting</span></div>
+    </header>
+    <section id="rotateNotice"><strong>Rotate your phone</strong><span>The controller is designed for landscape mode.</span></section>
+    <section id="controls">
+      <div class="stick-zone" id="leftZone" aria-label="Throttle and yaw stick">
+        <div class="axis-label top">THROTTLE</div><div class="axis-label side">YAW</div>
+        <div class="stick-base"><div class="stick" id="leftStick"></div></div>
+      </div>
+      <div class="center-controls">
+        <div class="telemetry"><span id="modeReadout">ANGLE</span><small id="latency">-- ms</small></div>
+        <button id="armButton" class="arm">ARM</button>
+        <button id="modeButton">ANGLE / ACRO</button>
+        <div class="button-row"><button id="turtleButton">TURTLE</button><button id="resetButton" class="danger">RESET</button></div>
+        <small id="message">Waiting for simulator…</small>
+      </div>
+      <div class="stick-zone" id="rightZone" aria-label="Pitch and roll stick">
+        <div class="axis-label top">PITCH</div><div class="axis-label side">ROLL</div>
+        <div class="stick-base"><div class="stick" id="rightStick"></div></div>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
+

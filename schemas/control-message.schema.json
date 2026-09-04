@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mobile controller input message",
+  "type": "object",
+  "required": ["type", "protocol_version", "session_id", "sequence", "client_time_ms", "axes", "buttons", "flight_mode"],
+  "properties": {
+    "type": {"const": "input"},
+    "protocol_version": {"const": 1},
+    "session_id": {"type": "string"},
+    "sequence": {"type": "integer", "minimum": 0},
+    "client_time_ms": {"type": "integer", "minimum": 0},
+    "axes": {
+      "type": "object",
+      "required": ["throttle", "yaw", "pitch", "roll"],
+      "properties": {
+        "throttle": {"type": "number", "minimum": 0, "maximum": 1},
+        "yaw": {"type": "number", "minimum": -1, "maximum": 1},
+        "pitch": {"type": "number", "minimum": -1, "maximum": 1},
+        "roll": {"type": "number", "minimum": -1, "maximum": 1}
+      }
+    },
+    "buttons": {
+      "type": "object",
+      "required": ["arm", "reset", "turtle"],
+      "properties": {"arm": {"type": "boolean"}, "reset": {"type": "boolean"}, "turtle": {"type": "boolean"}}
+    },
+    "flight_mode": {"enum": ["angle", "acro"]}
+  },
+  "additionalProperties": false
+}

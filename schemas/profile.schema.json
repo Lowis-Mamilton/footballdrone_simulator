@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.football-drone/profile.schema.json",
+  "title": "Football Drone Simulator profile",
+  "type": "object",
+  "required": ["schema_version", "name", "drone", "pid", "rates", "input"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "name": {"type": "string", "minLength": 1, "maxLength": 64},
+    "drone": {
+      "type": "object",
+      "required": ["mass_kg", "cage_diameter_m", "thrust_to_weight", "motor_time_constant_s", "linear_drag", "quadratic_drag", "angular_drag"],
+      "properties": {
+        "mass_kg": {"type": "number", "minimum": 0.05, "maximum": 0.3},
+        "cage_diameter_m": {"type": "number", "minimum": 0.15, "maximum": 0.22},
+        "thrust_to_weight": {"type": "number", "minimum": 1.05, "maximum": 6},
+        "motor_time_constant_s": {"type": "number", "minimum": 0.005, "maximum": 0.25},
+        "linear_drag": {"type": "number", "minimum": 0, "maximum": 1},
+        "quadratic_drag": {"type": "number", "minimum": 0, "maximum": 1},
+        "angular_drag": {"type": "number", "minimum": 0, "maximum": 1},
+        "collision_friction": {"type": "number", "minimum": 0, "maximum": 1},
+        "collision_restitution": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "pid": {"$ref": "#/$defs/axesPid"},
+    "rates": {"$ref": "#/$defs/axesRates"},
+    "input": {"type": "object"}
+  },
+  "$defs": {
+    "pid": {
+      "type": "object",
+      "required": ["p", "i", "d"],
+      "properties": {
+        "p": {"type": "number", "minimum": 0, "maximum": 2},
+        "i": {"type": "number", "minimum": 0, "maximum": 2},
+        "d": {"type": "number", "minimum": 0, "maximum": 0.5},
+        "integral_limit": {"type": "number", "minimum": 0, "maximum": 1},
+        "output_limit": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "rate": {
+      "type": "object",
+      "required": ["max_deg_s", "expo"],
+      "properties": {
+        "max_deg_s": {"type": "number", "minimum": 30, "maximum": 1500},
+        "expo": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "axesPid": {"type": "object", "required": ["pitch", "roll", "yaw"], "properties": {"pitch": {"$ref": "#/$defs/pid"}, "roll": {"$ref": "#/$defs/pid"}, "yaw": {"$ref": "#/$defs/pid"}}},
+    "axesRates": {"type": "object", "required": ["pitch", "roll", "yaw"], "properties": {"pitch": {"$ref": "#/$defs/rate"}, "roll": {"$ref": "#/$defs/rate"}, "yaw": {"$ref": "#/$defs/rate"}}}
+  }
+}
+
