@@ -6,6 +6,8 @@ const CameraOrbitMath := preload("res://src/core/camera_orbit.gd")
 const LOS_CAMERA_TARGET := Vector3(0.1, 1.25, 0.0)
 const LOS_CAMERA_POSITION := Vector3(-3.72, 1.72, 3.35)
 const FOLLOW_CAMERA_DISTANCE := 1.66
+const FPV_CAMERA_POSITION := Vector3(0.0, 0.035, -0.085)
+const CAMERA_MODES := ["los", "follow", "fpv"]
 const CAMERA_DRAG_SENSITIVITY := 0.005
 const CAMERA_MIN_PITCH := -PI / 12.0
 const CAMERA_MAX_PITCH := PI * 4.0 / 9.0
@@ -27,6 +29,7 @@ var drone: DroneBall
 var lessons: LessonManager
 var los_camera: Camera3D
 var follow_camera: Camera3D
+var fpv_camera: Camera3D
 var lesson_markers: Node3D
 var active_camera_mode := "los"
 var camera_dragging := false
@@ -36,6 +39,7 @@ var keyboard_throttle := 0.0
 var panel: PanelContainer
 var panel_content: VBoxContainer
 var panel_toggle_button: Button
+var camera_button: Button
 var connection_label: Label
 var armed_label: Label
 var mode_label: Label
@@ -76,6 +80,8 @@ func _process(delta: float) -> void:
 		_toggle_camera()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if active_camera_mode == "fpv":
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		camera_dragging = event.pressed
 		Input.set_default_cursor_shape(Input.CURSOR_DRAG if camera_dragging else Input.CURSOR_ARROW)
@@ -109,6 +115,12 @@ func _build_world() -> void:
 	follow_camera = Camera3D.new()
 	follow_camera.fov = 62.0
 	add_child(follow_camera)
+	fpv_camera = Camera3D.new()
+	fpv_camera.name = "FPVCamera"
+	fpv_camera.position = FPV_CAMERA_POSITION
+	fpv_camera.fov = 92.0
+	fpv_camera.near = 0.025
+	drone.add_child(fpv_camera)
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
@@ -190,7 +202,7 @@ func _build_ui() -> void:
 	toast_label.text = "Keyboard: R/F throttle · WASD pitch/roll · Q/E yaw · Space arm · C camera · Drag scene to orbit"
 	root.add_child(toast_label)
 
-	var camera_button := _button("LOS / FOLLOW  [C]")
+	camera_button = _button("CAMERA · LOS  [C]")
 	camera_button.position = Vector2(1050, 142)
 	camera_button.size = Vector2(212, 42)
 	camera_button.pressed.connect(_toggle_camera)
@@ -514,6 +526,8 @@ func _update_cameras(delta: float) -> void:
 		los_camera.global_position = LOS_CAMERA_TARGET + _camera_orbit_offset(los_distance)
 		los_camera.look_at(LOS_CAMERA_TARGET, Vector3.UP)
 		return
+	if active_camera_mode == "fpv":
+		return
 	var desired := drone.global_position + _camera_orbit_offset(FOLLOW_CAMERA_DISTANCE)
 	follow_camera.global_position = follow_camera.global_position.lerp(desired, 1.0 - exp(-delta * 5.0))
 	follow_camera.look_at(drone.global_position + Vector3(0.0, 0.08, 0.0), Vector3.UP)
@@ -545,11 +559,18 @@ func _update_hud() -> void:
 		timer_label.text = "ALT %.2f m" % maxf(0.0, drone.position.y - 0.1)
 
 func _toggle_camera() -> void:
-	active_camera_mode = "follow" if active_camera_mode == "los" else "los"
+	var next_index := (CAMERA_MODES.find(active_camera_mode) + 1) % CAMERA_MODES.size()
+	_set_camera_mode(CAMERA_MODES[next_index])
+
+func _set_camera_mode(mode: String) -> void:
+	active_camera_mode = mode if mode in CAMERA_MODES else "los"
 	los_camera.current = active_camera_mode == "los"
 	follow_camera.current = active_camera_mode == "follow"
+	fpv_camera.current = active_camera_mode == "fpv"
 	if active_camera_mode == "follow":
 		follow_camera.global_position = drone.global_position + _camera_orbit_offset(FOLLOW_CAMERA_DISTANCE)
+	if camera_button:
+		camera_button.text = "CAMERA · %s  [C]" % active_camera_mode.to_upper()
 
 func _start_lesson(lesson_id: String) -> void:
 	drone.reset_to_spawn()

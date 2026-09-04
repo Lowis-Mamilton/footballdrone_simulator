@@ -18,12 +18,13 @@ func _run() -> void:
 	_test_pairing_comparison()
 	_test_qr_generation()
 	_test_camera_orbit()
+	await _test_pairing_address_is_locally_reachable()
 	await _test_physics_lift()
 	await _test_angle_self_leveling()
 	await _test_yaw_disturbance_stability()
 	await _test_ui_drag_routing()
 	if failures.is_empty():
-		print("PASS: 11 Godot test groups")
+		print("PASS: 12 Godot test groups")
 		quit(0)
 	else:
 		for failure in failures:
@@ -102,6 +103,23 @@ func _test_camera_orbit() -> void:
 	_check(moved_offset.x > 0.0 and moved_offset.y > 0.0, "Dragging left and up must rotate the camera horizontally and vertically")
 	orbit = CameraOrbitScript.rotate(orbit, Vector2(0.0, -10000.0), 0.005, -PI / 12.0, PI * 4.0 / 9.0)
 	_check(is_equal_approx(orbit.y, PI * 4.0 / 9.0), "Camera pitch must clamp before flipping over")
+
+func _test_pairing_address_is_locally_reachable() -> void:
+	var control_server := root.get_node_or_null("ControlServer")
+	_check(control_server != null, "Control server autoload must be available")
+	if control_server == null:
+		return
+	var peer := StreamPeerTCP.new()
+	var connect_error := peer.connect_to_host(control_server.local_address, control_server.http.port)
+	var deadline := Time.get_ticks_msec() + 500
+	while connect_error == OK and peer.get_status() == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < deadline:
+		peer.poll()
+		await process_frame
+	_check(
+		connect_error == OK and peer.get_status() == StreamPeerTCP.STATUS_CONNECTED,
+		"The address advertised by the pairing QR must be reachable (address=%s port=%d)" % [control_server.local_address, control_server.http.port]
+	)
+	peer.disconnect_from_host()
 
 func _test_physics_lift() -> void:
 	var world := Node3D.new()
@@ -197,6 +215,13 @@ func _test_ui_drag_routing() -> void:
 	Input.parse_input_event(motion)
 	await process_frame
 	_check(absf(main.camera_orbit_yaw - initial_yaw) > 0.1, "Dragging an empty part of the flight view must rotate the camera")
+	main._toggle_camera()
+	_check(main.active_camera_mode == "follow" and main.follow_camera.current, "Camera control must switch from LOS to Follow")
+	main._toggle_camera()
+	_check(main.active_camera_mode == "fpv" and main.fpv_camera.current, "Camera control must switch from Follow to FPV")
+	_check(main.fpv_camera.get_parent() == main.drone, "FPV camera must inherit the drone transform")
+	main._toggle_camera()
+	_check(main.active_camera_mode == "los" and main.los_camera.current, "Camera control must cycle from FPV back to LOS")
 	main.queue_free()
 	await process_frame
 

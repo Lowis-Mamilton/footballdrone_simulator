@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 const baseUrl = process.env.SIM_HTTP_URL || 'http://127.0.0.1:41730';
 const token = process.env.SIM_PAIRING_TOKEN || '0123456789abcdef0123456789abcdef';
+const simulatorHost = new URL(baseUrl).hostname;
 
 const health = await fetch(`${baseUrl}/health`).then(response => response.json());
 assert.deepEqual(health, { ok: true, protocol_version: 1 });
@@ -14,7 +15,7 @@ let sendTimer;
 let stopTimer;
 await new Promise((resolve, reject) => {
   const timeout = setTimeout(() => reject(new Error(`Timed out. Messages: ${JSON.stringify(messages)}`)), 3000);
-  const socket = new WebSocket(`ws://127.0.0.1:${config.ws_port}`);
+  const socket = new WebSocket(`ws://${simulatorHost}:${config.ws_port}`);
   socket.addEventListener('open', () => {
     socket.send(JSON.stringify({ type: 'hello', protocol_version: 1, token }));
   });

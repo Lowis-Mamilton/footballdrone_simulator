@@ -41,7 +41,7 @@ Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""F
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Football Drone Simulator (Private Wi-Fi)"" program=""{app}\{#MyAppExeName}"""; Flags: runhidden waituntilterminated
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Football Drone Simulator (Private Wi-Fi)"" program=""{app}\{#MyAppExeName}"""; Flags: runhidden waituntilterminated; RunOnceId: "RemovePrivateFirewallRule"
 
 [Code]
 function NextButtonClick(CurPageID: Integer): Boolean;

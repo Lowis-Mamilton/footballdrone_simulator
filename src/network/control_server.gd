@@ -65,7 +65,26 @@ func private_addresses() -> PackedStringArray:
 			continue
 		if _is_private_ipv4(address):
 			result.append(address)
+	if http.server.is_listening():
+		var reachable := PackedStringArray()
+		for address in result:
+			if _can_reach_local_http(address):
+				reachable.append(address)
+		if not reachable.is_empty():
+			return reachable
 	return result
+
+func _can_reach_local_http(address: String) -> bool:
+	var peer := StreamPeerTCP.new()
+	if peer.connect_to_host(address, http.port) != OK:
+		return false
+	var deadline := Time.get_ticks_msec() + 100
+	while peer.get_status() == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < deadline:
+		peer.poll()
+		OS.delay_msec(1)
+	var connected := peer.get_status() == StreamPeerTCP.STATUS_CONNECTED
+	peer.disconnect_from_host()
+	return connected
 
 func select_address(address: String) -> void:
 	if address in private_addresses():

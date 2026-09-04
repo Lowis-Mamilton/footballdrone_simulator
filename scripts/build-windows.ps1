@@ -32,6 +32,13 @@ if (-not [string]::IsNullOrWhiteSpace($InnoSetupPath)) {
     $compiler = (Resolve-Path -LiteralPath $InnoSetupPath).Path
     & $compiler (Join-Path $projectRoot "installer\FootballDroneSimulator.iss")
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
+    $installerOutput = Get-ChildItem -LiteralPath (Join-Path $outputDirectory "installer") -Filter "FootballDroneSimulator-*-win-x64-setup.exe" |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $installerOutput) { throw "Missing compiled installer." }
+    $installerHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installerOutput.FullName).Hash.ToLowerInvariant()
+    Set-Content -LiteralPath ($installerOutput.FullName + ".sha256") -Value "$installerHash  $($installerOutput.Name)" -Encoding ascii
+    Write-Host "SHA-256 $installerHash  $($installerOutput.Name)"
 } else {
     Write-Host "Inno Setup path not supplied; portable EXE/PCK produced, installer skipped."
 }
