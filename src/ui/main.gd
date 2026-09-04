@@ -1,6 +1,14 @@
 extends Node
 
 const PANEL_WIDTH := 390.0
+const PANEL_TOGGLE_WIDTH := 36.0
+const CameraOrbitMath := preload("res://src/core/camera_orbit.gd")
+const LOS_CAMERA_TARGET := Vector3(0.1, 1.25, 0.0)
+const LOS_CAMERA_POSITION := Vector3(-3.72, 1.72, 3.35)
+const FOLLOW_CAMERA_DISTANCE := 1.66
+const CAMERA_DRAG_SENSITIVITY := 0.005
+const CAMERA_MIN_PITCH := -PI / 12.0
+const CAMERA_MAX_PITCH := PI * 4.0 / 9.0
 const QRCodeGenerator := preload("res://addons/kenyoni/qr_code/qr_code.gd")
 const COLORS := {
 	"background": Color("071426"),
@@ -21,9 +29,13 @@ var los_camera: Camera3D
 var follow_camera: Camera3D
 var lesson_markers: Node3D
 var active_camera_mode := "los"
+var camera_dragging := false
+var camera_orbit_yaw := 0.0
+var camera_orbit_pitch := 0.0
 var keyboard_throttle := 0.0
 var panel: PanelContainer
 var panel_content: VBoxContainer
+var panel_toggle_button: Button
 var connection_label: Label
 var armed_label: Label
 var mode_label: Label
@@ -63,6 +75,15 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("toggle_camera"):
 		_toggle_camera()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		camera_dragging = event.pressed
+		Input.set_default_cursor_shape(Input.CURSOR_DRAG if camera_dragging else Input.CURSOR_ARROW)
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion and camera_dragging:
+		_rotate_camera_orbit(event.relative)
+		get_viewport().set_input_as_handled()
+
 func _build_world() -> void:
 	arena = DroneSoccerArena.new()
 	add_child(arena)
@@ -77,11 +98,14 @@ func _build_world() -> void:
 	add_child(lesson_markers)
 
 	los_camera = Camera3D.new()
-	los_camera.position = Vector3(-3.72, 1.72, 3.35)
+	los_camera.position = LOS_CAMERA_POSITION
 	los_camera.fov = 54.0
 	add_child(los_camera)
-	los_camera.look_at_from_position(los_camera.position, Vector3(0.1, 1.25, 0.0), Vector3.UP)
+	los_camera.look_at_from_position(los_camera.position, LOS_CAMERA_TARGET, Vector3.UP)
 	los_camera.current = true
+	var initial_offset := LOS_CAMERA_POSITION - LOS_CAMERA_TARGET
+	camera_orbit_yaw = atan2(initial_offset.x, initial_offset.z)
+	camera_orbit_pitch = asin(initial_offset.y / initial_offset.length())
 	follow_camera = Camera3D.new()
 	follow_camera.fov = 62.0
 	add_child(follow_camera)
@@ -90,6 +114,7 @@ func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var root := Control.new()
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(root)
 
@@ -126,6 +151,12 @@ func _build_ui() -> void:
 	panel_content = VBoxContainer.new()
 	panel_content.add_theme_constant_override("separation", 12)
 	margin.add_child(panel_content)
+	panel_toggle_button = _button("<")
+	panel_toggle_button.position = Vector2(panel.position.x + PANEL_WIDTH - PANEL_TOGGLE_WIDTH, panel.position.y + 10.0)
+	panel_toggle_button.size = Vector2(PANEL_TOGGLE_WIDTH, 42.0)
+	panel_toggle_button.tooltip_text = "Collapse side panel"
+	panel_toggle_button.pressed.connect(_toggle_panel)
+	root.add_child(panel_toggle_button)
 
 	var hud := PanelContainer.new()
 	hud.position = Vector2(424, 82)
@@ -156,7 +187,7 @@ func _build_ui() -> void:
 	toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	toast_label.add_theme_color_override("font_color", COLORS.text)
 	toast_label.add_theme_stylebox_override("normal", _style(Color(0.03, 0.07, 0.12, 0.88), 9, COLORS.line))
-	toast_label.text = "Keyboard fallback: R/F throttle · WASD pitch/roll · Q/E yaw · Space arm · C camera"
+	toast_label.text = "Keyboard: R/F throttle · WASD pitch/roll · Q/E yaw · Space arm · C camera · Drag scene to orbit"
 	root.add_child(toast_label)
 
 	var camera_button := _button("LOS / FOLLOW  [C]")
@@ -166,7 +197,7 @@ func _build_ui() -> void:
 	root.add_child(camera_button)
 
 func _show_panel(panel_name: String) -> void:
-	panel.visible = true
+	_set_panel_collapsed(false)
 	for child in panel_content.get_children():
 		child.queue_free()
 	tuning_controls.clear()
@@ -177,6 +208,15 @@ func _show_panel(panel_name: String) -> void:
 		"tuning": _build_tuning_panel()
 		"controller": _build_controller_panel()
 		"results": _build_results_panel()
+
+func _toggle_panel() -> void:
+	_set_panel_collapsed(panel.visible)
+
+func _set_panel_collapsed(collapsed: bool) -> void:
+	panel.visible = not collapsed
+	panel_toggle_button.text = ">" if collapsed else "<"
+	panel_toggle_button.tooltip_text = "Expand side panel" if collapsed else "Collapse side panel"
+	panel_toggle_button.position.x = panel.position.x if collapsed else panel.position.x + PANEL_WIDTH - PANEL_TOGGLE_WIDTH
 
 func _build_pair_panel() -> void:
 	_add_heading("PAIR YOUR PHONE", "Both devices must be on the same Wi-Fi network.")
@@ -469,12 +509,28 @@ func _apply_input_profile(frame: DroneInputFrame) -> DroneInputFrame:
 	return adjusted
 
 func _update_cameras(delta: float) -> void:
-	if active_camera_mode != "follow":
+	if active_camera_mode == "los":
+		var los_distance := (LOS_CAMERA_POSITION - LOS_CAMERA_TARGET).length()
+		los_camera.global_position = LOS_CAMERA_TARGET + _camera_orbit_offset(los_distance)
+		los_camera.look_at(LOS_CAMERA_TARGET, Vector3.UP)
 		return
-	var offset := Vector3(-1.05, 0.58, 1.15)
-	var desired := drone.global_position + offset
+	var desired := drone.global_position + _camera_orbit_offset(FOLLOW_CAMERA_DISTANCE)
 	follow_camera.global_position = follow_camera.global_position.lerp(desired, 1.0 - exp(-delta * 5.0))
 	follow_camera.look_at(drone.global_position + Vector3(0.0, 0.08, 0.0), Vector3.UP)
+
+func _rotate_camera_orbit(mouse_delta: Vector2) -> void:
+	var orbit := CameraOrbitMath.rotate(
+		Vector2(camera_orbit_yaw, camera_orbit_pitch),
+		mouse_delta,
+		CAMERA_DRAG_SENSITIVITY,
+		CAMERA_MIN_PITCH,
+		CAMERA_MAX_PITCH
+	)
+	camera_orbit_yaw = orbit.x
+	camera_orbit_pitch = orbit.y
+
+func _camera_orbit_offset(distance: float) -> Vector3:
+	return CameraOrbitMath.offset(camera_orbit_yaw, camera_orbit_pitch, distance)
 
 func _update_hud() -> void:
 	connection_label.text = "PHONE LIVE" if ControlServer.is_controller_connected() else "KEYBOARD / NO PHONE"
@@ -493,12 +549,12 @@ func _toggle_camera() -> void:
 	los_camera.current = active_camera_mode == "los"
 	follow_camera.current = active_camera_mode == "follow"
 	if active_camera_mode == "follow":
-		follow_camera.global_position = drone.global_position + Vector3(-1.05, 0.58, 1.15)
+		follow_camera.global_position = drone.global_position + _camera_orbit_offset(FOLLOW_CAMERA_DISTANCE)
 
 func _start_lesson(lesson_id: String) -> void:
 	drone.reset_to_spawn()
 	lessons.start_lesson(lesson_id)
-	panel.visible = false
+	_set_panel_collapsed(true)
 	toast_label.text = "Lesson started — connect your phone, arm, and follow the objective."
 
 func _on_profile_changed(profile: Dictionary) -> void:

@@ -36,5 +36,11 @@ for (const requiredId of ['leftZone', 'rightZone', 'armButton', 'modeButton', 'r
   assert.match(controllerHtml, new RegExp(`id=["']${requiredId}["']`), `Missing controller element: ${requiredId}`);
 }
 
-console.log(`PASS: ${profiles.length} profiles, 2 schemas, project resources, and controller syntax`);
+const mainUi = readFileSync('src/ui/main.gd', 'utf8');
+assert.match(
+  mainUi,
+  /root\.mouse_filter\s*=\s*Control\.MOUSE_FILTER_IGNORE/,
+  'Full-screen UI root must ignore empty-space mouse events so camera dragging reaches _unhandled_input'
+);
 
+console.log(`PASS: ${profiles.length} profiles, 2 schemas, project resources, and controller syntax`);

@@ -3,6 +3,7 @@ extends SceneTree
 const ProfileStoreScript := preload("res://src/data/profile_store.gd")
 const ControlServerScript := preload("res://src/network/control_server.gd")
 const QRCodeGenerator := preload("res://addons/kenyoni/qr_code/qr_code.gd")
+const CameraOrbitScript := preload("res://src/core/camera_orbit.gd")
 
 var failures := PackedStringArray()
 
@@ -16,11 +17,13 @@ func _run() -> void:
 	_test_profiles()
 	_test_pairing_comparison()
 	_test_qr_generation()
+	_test_camera_orbit()
 	await _test_physics_lift()
 	await _test_angle_self_leveling()
 	await _test_yaw_disturbance_stability()
+	await _test_ui_drag_routing()
 	if failures.is_empty():
-		print("PASS: 9 Godot test groups")
+		print("PASS: 11 Godot test groups")
 		quit(0)
 	else:
 		for failure in failures:
@@ -90,6 +93,15 @@ func _test_qr_generation() -> void:
 	var image: Image = QRCodeGenerator.generate_image(encoded, 2)
 	_check(not encoded.is_empty(), "QR payload must encode")
 	_check(image.get_width() > 40 and image.get_width() == image.get_height(), "QR image must be square")
+
+func _test_camera_orbit() -> void:
+	_check(CameraOrbitScript.offset(0.0, 0.0, 2.0).is_equal_approx(Vector3(0.0, 0.0, 2.0)), "Camera orbit must preserve radius and face the target")
+	var orbit := CameraOrbitScript.rotate(Vector2.ZERO, Vector2(-100.0, -40.0), 0.005, -PI / 12.0, PI * 4.0 / 9.0)
+	var moved_offset: Vector3 = CameraOrbitScript.offset(orbit.x, orbit.y, 2.0)
+	_check(is_equal_approx(moved_offset.length(), 2.0), "Mouse orbit must preserve camera distance")
+	_check(moved_offset.x > 0.0 and moved_offset.y > 0.0, "Dragging left and up must rotate the camera horizontally and vertically")
+	orbit = CameraOrbitScript.rotate(orbit, Vector2(0.0, -10000.0), 0.005, -PI / 12.0, PI * 4.0 / 9.0)
+	_check(is_equal_approx(orbit.y, PI * 4.0 / 9.0), "Camera pitch must clamp before flipping over")
 
 func _test_physics_lift() -> void:
 	var world := Node3D.new()
@@ -164,6 +176,28 @@ func _test_yaw_disturbance_stability() -> void:
 	_check(max_tilt < deg_to_rad(10.0), "A one-frame 1%% yaw input must not destabilize Angle mode (max tilt=%.2f deg)" % rad_to_deg(max_tilt))
 	test_drone.set_armed(false)
 	world.queue_free()
+	await process_frame
+
+func _test_ui_drag_routing() -> void:
+	var main_scene: PackedScene = load("res://src/main.tscn")
+	var main := main_scene.instantiate()
+	root.add_child(main)
+	await process_frame
+	var initial_yaw: float = main.camera_orbit_yaw
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = Vector2(800.0, 400.0)
+	Input.parse_input_event(press)
+	await process_frame
+	var motion := InputEventMouseMotion.new()
+	motion.position = Vector2(860.0, 400.0)
+	motion.relative = Vector2(60.0, 0.0)
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	Input.parse_input_event(motion)
+	await process_frame
+	_check(absf(main.camera_orbit_yaw - initial_yaw) > 0.1, "Dragging an empty part of the flight view must rotate the camera")
+	main.queue_free()
 	await process_frame
 
 func _read_profile(path: String) -> Dictionary:
