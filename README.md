@@ -5,16 +5,32 @@ the simulation and serves a low-latency, landscape phone controller over the
 same Wi-Fi network. No account, cloud service, or Internet connection is used
 during play.
 
-## Current MVP
+## Download and install
 
-- Godot 4.7 desktop simulator for Windows 10/11 x64, with a macOS export preset
-  ready for phase two.
+Download the latest ready-to-run release directly:
+
+- [Windows 10/11 x64 installer](https://github.com/Lowis-Mamilton/footballdrone_simulator/releases/download/v1.0.0/FootballDroneSimulator-1.0.0-win-x64-setup.exe)
+- [macOS Universal app for Apple Silicon and Intel](https://github.com/Lowis-Mamilton/footballdrone_simulator/releases/download/v1.0.0/FootballDroneSimulator-1.0.0-macOS-universal.zip)
+
+On Windows, run the installer and approve the private-network firewall prompt
+so a phone on the same Wi-Fi can connect. The unsigned installer may trigger
+Microsoft SmartScreen; select **More info > Run anyway**.
+
+On macOS, unzip the download, move **Football Drone Simulator.app** to
+**Applications**, then use **Control-click > Open** the first time. Allow local
+network access when prompted. This build is unsigned and unnotarized, so macOS
+may display a Gatekeeper warning.
+
+## Version 1.0.0
+
+- Godot 4.7 desktop simulator for Windows 10/11 x64 and Universal macOS builds
+  for Apple Silicon and Intel.
 - 20 cm, sub-300 g configurable drone ball with four-motor thrust, reaction
   torque, motor lag, drag, fixed-step PID control, and cage collision physics.
 - Angle and Acro modes, arm safety, disconnect failsafe, instant reset, and
   turtle recovery.
-- FAI-sized 6 x 3 x 3 m arena, 40 cm goal openings, LOS and follow cameras,
-  orientation LEDs, procedural motor/impact audio, and training markers.
+- FAI-sized 6 x 3 x 3 m arena, 40 cm goal openings, LOS, follow, and FPV
+  cameras, orientation LEDs, procedural motor/impact audio, and training markers.
 - QR pairing, a 60 Hz WebSocket input protocol, one-controller enforcement,
   sequence checks, RTT display, and a 250 ms failsafe.
 - Responsive iOS Safari / Android Chrome control page with Mode 1, Mode 2, and
@@ -86,9 +102,23 @@ installer adds an inbound Windows Firewall rule restricted to private network
 profiles and removes it during uninstall. User profiles and results are retained
 unless `scripts/remove-user-data.ps1` is run and explicitly confirmed.
 
-The MVP installer is unsigned and may trigger Microsoft SmartScreen. Production
+The installer is unsigned and may trigger Microsoft SmartScreen. Production
 releases should configure a real code-signing certificate while keeping the PCK
 separate from the executable.
+
+## macOS build
+
+Install the matching Godot export templates, then build a Universal archive for
+Intel and Apple Silicon Macs:
+
+```powershell
+.\scripts\build-macos.ps1 -GodotPath "C:\path\to\Godot.exe"
+```
+
+The resulting `.zip` contains a standard macOS `.app` bundle. This development
+build is unsigned and unnotarized, so Gatekeeper may require the recipient to
+open it from Finder using **Control-click > Open**. Public distribution should
+use an Apple Developer ID certificate and notarization.
 
 ## Module seams
 

@@ -1,5 +1,5 @@
 #define MyAppName "Football Drone Simulator"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "1.0.0"
 #define MyAppPublisher "Football Drone Simulator"
 #define MyAppExeName "FootballDroneSimulator.exe"
 
